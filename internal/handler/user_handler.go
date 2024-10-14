@@ -27,38 +27,39 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	json.NewEncoder(w).Encode(payload)
 }
 
-// POST /save
 func (h *UserHandler) SaveUser(w http.ResponseWriter, r *http.Request) {
 	var user domain.User
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
-	err = h.service.SaveUser(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if user.ID == "" {
+		if err := h.service.UpdateUser(r.Context(), user); err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	} else {
+		if err := h.service.SaveUser(r.Context(), user); err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		respondWithJSON(w, http.StatusCreated, user)
 	}
-
-	w.WriteHeader(http.StatusCreated)
 }
 
-// GET /find/{id}
 func (h *UserHandler) FindUserByID(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/find/")
-	user, exists := h.service.FindUserByID(id)
-	if !exists {
-		http.Error(w, "user not found", http.StatusNotFound)
+	user, found := h.service.FindUserByID(r.Context(), id)
+	if !found {
+		respondWithError(w, http.StatusNotFound, "User not found")
 		return
 	}
-
-	json.NewEncoder(w).Encode(user)
+	respondWithJSON(w, http.StatusOK, user)
 }
 
 func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.service.GetAllUsers()
+	users, err := h.service.GetAllUsers(r.Context())
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -68,13 +69,12 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/users/")
-	err := h.service.DeleteUser(id)
+	err := h.service.DeleteUser(r.Context(), id)
 	if err != nil {
 		respondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}
-
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"})
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.ID = id
-	if err := h.service.UpdateUser(user); err != nil {
+	if err := h.service.UpdateUser(r.Context(), user); err != nil {
 		respondWithError(w, http.StatusNotFound, err.Error())
 		return
 	}

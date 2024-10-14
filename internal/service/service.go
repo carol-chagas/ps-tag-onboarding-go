@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"regexp"
 
@@ -30,38 +31,38 @@ func (s *UserService) validateUser(user domain.User) error {
 	return nil
 }
 
-func (s *UserService) SaveUser(user domain.User) error {
+func (s *UserService) SaveUser(ctx context.Context, user domain.User) error {
 	if err := s.validateUser(user); err != nil {
 		return err
 	}
 
-	existingUser, _ := s.repo.FindByName(user.FirstName, user.LastName)
+	existingUser, _ := s.repo.FindByEmail(ctx, user.Email)
 	if existingUser.ID != "" && existingUser.ID != user.ID {
-		return errors.New("user already exists")
+		return errors.New("email already exists")
 	}
 
-	return s.repo.Save(user)
+	return s.repo.Save(ctx, user)
 }
 
-func (s *UserService) FindUserByID(id string) (domain.User, bool) {
-	return s.repo.FindByID(id)
+func (s *UserService) UpdateUser(ctx context.Context, user domain.User) error {
+	if err := s.validateUser(user); err != nil {
+		return err
+	}
+	return s.repo.Update(ctx, user)
 }
 
-func (s *UserService) GetAllUsers() ([]domain.User, error) {
-	return s.repo.FindAll()
+func (s *UserService) FindUserByID(ctx context.Context, id string) (domain.User, bool) {
+	return s.repo.FindByID(ctx, id)
 }
 
-func (s *UserService) DeleteUser(id string) error {
-	user, found := s.repo.FindByID(id)
+func (s *UserService) GetAllUsers(ctx context.Context) ([]domain.User, error) {
+	return s.repo.FindAll(ctx)
+}
+
+func (s *UserService) DeleteUser(ctx context.Context, id string) error {
+	user, found := s.repo.FindByID(ctx, id)
 	if !found {
 		return errors.New("user not found")
 	}
-	return s.repo.Delete(user.ID)
-}
-
-func (s *UserService) UpdateUser(user domain.User) error {
-	if err := s.repo.Update(user); err != nil {
-		return err
-	}
-	return nil
+	return s.repo.Delete(ctx, user.ID)
 }

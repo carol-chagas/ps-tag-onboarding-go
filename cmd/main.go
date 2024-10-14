@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"ps-tag-onboarding-go/config"
 	"ps-tag-onboarding-go/internal/handler"
@@ -11,7 +13,10 @@ import (
 )
 
 func main() {
-	mongoClient, err := config.GetMongoClient("mongodb://localhost:27017")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	mongoClient, err := config.GetMongoClient(ctx, "mongodb://localhost:27017")
 	if err != nil {
 		log.Fatal(err)
 	}
