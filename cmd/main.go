@@ -11,7 +11,10 @@ import (
 )
 
 func main() {
-	mongoClient := config.ConnectMongoDB("mongodb://localhost:27017")
+	mongoClient, err := config.GetMongoClient("mongodb://localhost:27017")
+	if err != nil {
+		log.Fatal(err)
+	}
 	db := mongoClient.Database("tag-onboarding")
 
 	userRepository := repository.NewUserRepository(db)
