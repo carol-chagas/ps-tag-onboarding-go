@@ -51,7 +51,8 @@ func (m *MockUserRepository) Delete(ctx context.Context, id string) error {
 
 func Test_SaveAndValidateUser(t *testing.T) {
 	mockRepo := new(MockUserRepository)
-	mockRepo.On("Save", mock.Anything).Return(nil)
+	mockRepo.On("FindByEmail", mock.Anything, "ana.chagas@example.com").Return(domain.User{}, false)
+	mockRepo.On("Save", mock.Anything, mock.Anything).Return(nil)
 
 	userService := NewUserService(mockRepo)
 

@@ -16,7 +16,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	mongoClient, err := config.GetMongoClient(ctx, "mongodb://localhost:27017")
+	mongoClient, err := config.GetMongoClient(ctx, "mongodb://mongo:27017")
 	if err != nil {
 		log.Fatal(err)
 	}
